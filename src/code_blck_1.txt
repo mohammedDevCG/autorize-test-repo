@@ -1,0 +1,65 @@
+import com.kms.katalon.core.webui.keyword.WebUiBuiltInKeywords as WebUI
+
+// Test Case ID: TC_001
+// Test Case Description: Validate the Login functionality of the saucedemo ecommerce site
+
+// Launch the saucedemo URL
+WebUI.openBrowser('')
+WebUI.navigateToUrl('https://www.saucedemo.com/')
+
+// Verify the username and password fields are available
+WebUI.verifyElementPresent(findTestObject('Page_Login/input_username'), 10)
+WebUI.verifyElementPresent(findTestObject('Page_Login/input_password'), 10)
+
+// Enter the username
+WebUI.setText(findTestObject('Page_Login/input_username'), 'standard_user')
+
+// Enter the password
+WebUI.setText(findTestObject('Page_Login/input_password'), 'secret_sauce')
+
+// Click on Login and verify the user has successfully logged in
+WebUI.click(findTestObject('Page_Login/button_login'))
+WebUI.verifyElementPresent(findTestObject('Page_Home/icon_menu'), 10)
+
+WebUI.closeBrowser()
+
+// Test Case ID: TC_002
+// Test Case Description: Validate the shopping functionality
+
+// Access the saucedemo site and login using the standard user
+WebUI.openBrowser('')
+WebUI.navigateToUrl('https://www.saucedemo.com/')
+WebUI.setText(findTestObject('Page_Login/input_username'), 'standard_user')
+WebUI.setText(findTestObject('Page_Login/input_password'), 'secret_sauce')
+WebUI.click(findTestObject('Page_Login/button_login'))
+WebUI.verifyElementPresent(findTestObject('Page_Home/icon_menu'), 10)
+
+// Select any 1 item to the cart
+WebUI.click(findTestObject('Page_Home/button_addToCart_item1'))
+WebUI.verifyElementText(findTestObject('Page_Home/icon_cart_qty'), '1')
+
+// Click on the top right corner to proceed to the cart
+WebUI.click(findTestObject('Page_Home/icon_cart'))
+WebUI.verifyElementPresent(findTestObject('Page_Cart/item_in_cart'), 10)
+
+// Verify if the chosen items are shown in the cart
+WebUI.verifyElementPresent(findTestObject('Page_Cart/item_in_cart'), 10)
+
+// Click on "Checkout"
+WebUI.click(findTestObject('Page_Cart/button_checkout'))
+WebUI.verifyElementPresent(findTestObject('Page_Checkout/input_firstName'), 10)
+
+// Enter the first name, last name and zip code
+WebUI.setText(findTestObject('Page_Checkout/input_firstName'), 'John')
+WebUI.setText(findTestObject('Page_Checkout/input_lastName'), 'Doe')
+WebUI.setText(findTestObject('Page_Checkout/input_zipCode'), '12345')
+
+// Click on "Continue" and then verify the total cost
+WebUI.click(findTestObject('Page_Checkout/button_continue'))
+WebUI.verifyElementPresent(findTestObject('Page_Summary/label_total'), 10)
+
+// Click on "Finish" and verify if the thank you message is shown
+WebUI.click(findTestObject('Page_Summary/button_finish'))
+WebUI.verifyElementText(findTestObject('Page_Complete/label_thankYou'), 'Thank you for your order!')
+
+WebUI.closeBrowser()
