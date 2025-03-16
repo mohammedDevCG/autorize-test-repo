@@ -1,14 +1,16 @@
 package com.example.tests;
 
-import org.openqa.selenium.By;
+import com.example.pages.LoginPage;
+import com.example.pages.LoanApplicationPage;
+import com.example.pages.CreditScorePage;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Duration;
@@ -16,8 +18,12 @@ import java.util.Properties;
 
 public class LoanApplicationTest {
 
-    protected WebDriver driver;
-    protected Properties prop;
+    private WebDriver driver;
+    private Properties prop;
+    private WebDriverWait wait;
+    private LoginPage loginPage;
+    private LoanApplicationPage loanApplicationPage;
+    private CreditScorePage creditScorePage;
 
     @BeforeMethod
     public void setUp() throws IOException {
@@ -27,12 +33,20 @@ public class LoanApplicationTest {
 
         String browser = prop.getProperty("browser");
         if (browser.equalsIgnoreCase("chrome")) {
-            driver = new ChromeDriver();
+            ChromeOptions options = new ChromeOptions();
+            if (Boolean.parseBoolean(prop.getProperty("chromeHeadless"))) {
+                options.addArguments("--headless=new");
+            }
+            driver = new ChromeDriver(options);
         }
-        // Add conditions for other browsers if needed
 
         driver.manage().window().maximize();
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        loginPage = new LoginPage(driver);
+        loanApplicationPage = new LoanApplicationPage(driver);
+        creditScorePage = new CreditScorePage(driver);
     }
 
     @AfterMethod
@@ -50,73 +64,23 @@ public class LoanApplicationTest {
     }
 
     @Test(dataProvider = "loginData")
-    public void verifyDocumentChecklist(String username, String password) {
-        driver.get("URL_OF_APPLICATION");
-
-        // Login
-        driver.findElement(By.id("loginID")).sendKeys(username);
-        driver.findElement(By.id("password")).sendKeys(password);
-        driver.findElement(By.id("loginButton")).click();
-
-        // Navigate to the loan application
-        driver.findElement(By.xpath("//a[contains(text(),'Loan Application')]")).click();
-
-        // Verify all documents are present
-        String[] documents = {"Address proof", "Property completion state proof", "Income proof", "Credit score document"};
-        for (String document : documents) {
-            WebElement docElement = driver.findElement(By.xpath("//div[contains(text(),'" + document + "')]"));
-            assert docElement.isDisplayed();
-        }
-
-        // Double click to open each document
-        for (String document : documents) {
-            WebElement docElement = driver.findElement(By.xpath("//div[contains(text(),'" + document + "')]"));
-            docElement.click(); // Assuming click will open the document
-            // Add steps to handle document view if required
-        }
-
-        // Click checkbox against each document
-        for (String document : documents) {
-            WebElement checkbox = driver.findElement(By.xpath("//div[contains(text(),'" + document + "')]/following-sibling::input[@type='checkbox']"));
-            checkbox.click();
-            assert checkbox.isSelected();
-        }
-
-        // Complete the verification process
-        WebElement completeCheckbox = driver.findElement(By.id("completeVerification"));
-        completeCheckbox.click();
-        assert completeCheckbox.isSelected();
+    public void verifyChecklistFunctionality(String username, String password) {
+        loginPage.login(username, password);
+        loanApplicationPage.navigateToLoanApplication();
+        loanApplicationPage.verifyDocuments();
+        loanApplicationPage.doubleClickToOpenDocuments();
+        loanApplicationPage.checkDocumentCheckbox();
+        loanApplicationPage.completeVerificationProcess();
     }
 
-    @Test(dependsOnMethods = {"verifyDocumentChecklist"})
-    public void confirmCreditScore() {
-        driver.get("URL_OF_APPLICATION");
-
-        // Open the credit score report from the checklist
-        driver.findElement(By.xpath("//div[contains(text(),'Credit score document')]")).click();
-        driver.get("www.creditscore.com");
-
-        // Login to the credit score link
-        driver.findElement(By.id("loginID")).sendKeys("user123");
-        driver.findElement(By.id("password")).sendKeys("abcabd");
-        driver.findElement(By.id("loginButton")).click();
-
-        // Navigate to credit score page
-        driver.findElement(By.xpath("//a[contains(text(),'Credit Score')]")).click();
-
-        // Search for customer ID
-        driver.findElement(By.id("searchBox")).sendKeys("acb1243");
-        driver.findElement(By.id("searchButton")).click();
-
-        // Copy the credit score in customer details
-        WebElement creditScoreElement = driver.findElement(By.id("creditScore"));
-        String creditScore = creditScoreElement.getText();
-        assert Integer.parseInt(creditScore) > 500;
-
-        // Update the verification status in the system
-        driver.findElement(By.id("verificationStatus")).sendKeys(creditScore);
-
-        // Logout of the credit score system
-        driver.findElement(By.id("logoutButton")).click();
+    @Test(dependsOnMethods = "verifyChecklistFunctionality")
+    public void confirmCreditScoreAbove500() {
+        creditScorePage.openCreditScoreReport("www.creditscore.com");
+        creditScorePage.login("user123", "abcabd");
+        creditScorePage.navigateToCreditScorePage();
+        creditScorePage.searchCustomer("acb1243");
+        creditScorePage.copyCreditScore();
+        creditScorePage.updateVerificationStatus();
+        creditScorePage.logout();
     }
 }
